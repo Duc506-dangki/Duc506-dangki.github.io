@@ -1,75 +1,140 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>hãy đăng kí đăng ký</title>
-    <!-- CSS -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <style>
-      body {
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      .container {
-        margin-top: 30px;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Đăng ký form -->
-    <div class="container">
-      <h2>Vui lòng đăng ký</h2>
-      <form>
-        <div class="form-group">
-          <label for="username"><b>Tên đăng nhập</b></label>
-          <input type="text" class="form-control" placeholder="Nhập tên đăng nhập" name="username" id="username" required autofocus>
-        </div>
-        <div class="form-group">
-          <label for="email"><b>Địa chỉ email</b></label>
-          <input type="email" class="form-control" placeholder="Nhập email" name="email" id="email" required>
-        </div>
-        <div class="form-group">
-          <label for="password"><b>Mật khẩu</b></label>
-          <input type="password" class="form-control" placeholder="Nhập mật khẩu" name="password" id="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block" id="btnRegister">Đăng ký</button>
-      </form>
-      <p>Nếu đã có tài khoản? Hãy <a href="https://Duc506.github.io">đăng nhập</a>.</p>
-    </div>
+<html lang="en">
 
-    <!-- JavaScript -->
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script>
-      $(document).ready(function() {
-        // Bắt sự kiện khi nhấn vào nút Đăng ký
-        $('#btnRegister').on('click', function(event) {
-          event.preventDefault();
+<head>
+  <meta charset="utf-8">
+  <title>Webleb</title>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <meta content="" name="keywords">
+  <meta content="" name="description">
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .container {
+      font-size: 40px;
+      font-family: 'Red Hat Display', sans-serif;
+      letter-spacing: 1.5px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 40px;
+    }
+    
+    .container * {
+      display: inline-block;
+      overflow: hidden;
+      position: absolute;
+    }
+    
+    .bar {
+      width: 3px;
+      height: 49px;
+      position: absolute;
+      top: -1px;
+    }
+  </style>
+</head>
 
-          // Lưu thông tin tài khoản
-          var username = $('#username').val();
-          var email = $('#email').val();
-          var password = $('#password').val();
-          // Lưu thông tin vào cơ sở dữ liệu hoặc xử lý các thông tin khác
+<body>
+  <div class="container">
+    <div class="txt1">Khánh</div><span class="txt2">Dominate</span>
+    <div class="bar"></div>
+  </div>
 
-          // Hiển thị thông báo đăng ký thành công
-          alert('Đăng ký thành công!');
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.2.4/gsap.min.js"></script>
+  <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/16327/SplitText3.min.js"></script>
+  <script src="/js/main.js"></script>
 
-          // Chuyển hướng đến trang đăng nhập
-          window.location.href = 'https://Duc506.github.io';
-        });
+  <script>
+    var t2 = new SplitText('.txt2').chars,
+      color2 = '#17c0fd',
+      color1 = '#fff',
+      moveBar = () => {
+        gsap.set('.bar', {
+          left: gsap.getProperty('.txt1', 'width') + 1
+        })
+      };
 
-        // Sử dụng HTML5 validation để kiểm tra tên đăng nhập, email và mật khẩu
-        $('form').on('submit', function(event) {
-          if (this.checkValidity() === false) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          this.classList.add('was-validated');
-        });
-      });
-    </script>
-    <!-- JavaScript Bootstrap và Popper -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-  </body>
+    gsap.timeline({
+        delay: 0.2
+      })
+      .set('.txt1', {
+        color: color1,
+        fontWeight: 'regular'
+      })
+      .set('.txt2', {
+        color: color2,
+        fontWeight: 'bold',
+        opacity: 0,
+        x: gsap.getProperty('.txt1', 'width') - 2,
+        immediateRender: true
+      })
+      .set('.bar', {
+        left: 1,
+        backgroundColor: color1,
+        immediateRender: true
+      })
+
+      .to('.bar', {
+        duration: 0.1,
+        opacity: 0,
+        ease: Expo.easeIn,
+        yoyo: true,
+        repeat: 5,
+        repeatDelay: 0.3
+      }, 0)
+      .from('.txt1', {
+        duration: 1.1,
+        width: 0,
+        ease: SteppedEase.config(14),
+        onUpdate: moveBar
+      }, 2.5)
+      .to('.bar', {
+        duration: 0.05,
+        backgroundColor: color2
+      }, '+=0.15')
+      .to('.bar', {
+        duration: 1.0,
+        width: 290,
+        ease: Power4.easeInOut
+      }, '+=0.1')
+      .from('.container', {
+        duration: 1.0,
+        x: 135,
+        ease: Power4.easeInOut
+      }, '-=1.0')
+      .to('.txt2', {
+        duration: 0.01,
+        opacity: 1
+      }, '-=0.1')
+      .to('.bar', {
+        duration: 0.4,
+        x: 290,
+        width: 0,
+        ease: Power4.easeIn
+      })
+      .from(t2, {
+        duration: 0.6,
+        opacity: 0,
+        ease: Power3.easeInOut,
+        stagger: 0.02
+      }, '-=0.5')
+      .to('.txt1', {
+        duration: 1.5,
+        opacity: 0.25,
+        ease: Power3.easeInOut
+      }, '-=1.2')
+      .timeScale(1.45);
+  </script>
+</body>
+
 </html>
