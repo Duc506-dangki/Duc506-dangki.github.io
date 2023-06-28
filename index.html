@@ -1,140 +1,288 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>Webleb</title>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <meta content="" name="keywords">
-  <meta content="" name="description">
-  <style>
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      background: #000;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .container {
-      font-size: 40px;
-      font-family: 'Red Hat Display', sans-serif;
-      letter-spacing: 1.5px;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 600px;
-      height: 40px;
-    }
-    
-    .container * {
-      display: inline-block;
-      overflow: hidden;
-      position: absolute;
-    }
-    
-    .bar {
-      width: 3px;
-      height: 49px;
-      position: absolute;
-      top: -1px;
-    }
-  </style>
+    <title>Rắn</title>
+    <style>
+        #game-board {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border: 1px solid black;
+            overflow: hidden;
+        }
+
+        .snake {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: green;
+        }
+
+        .food {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+        }
+
+        #controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .control-button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #game-over {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        #score {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 18px;
+        }
+    </style>
 </head>
-
 <body>
-  <div class="container">
-    <div class="txt1">Khánh</div><span class="txt2"> Dominate</span>
-    <div class="bar"></div>
-  </div>
+    <div id="game-board"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.2.4/gsap.min.js"></script>
-  <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/16327/SplitText3.min.js"></script>
-  <script src="/js/main.js"></script>
+    <div id="controls">
+        <div class="control-row">
+            <button class="control-button" id="w-button">W</button>
+        </div>
+        <div class="control-row">
+            <button class="control-button" id="a-button">A</button>
+            <button class="control-button" id="s-button">S</button>
+            <button class="control-button" id="d-button">D</button>
+        </div>
+    </div>
 
-  <script>
-    var t2 = new SplitText('.txt2').chars,
-      color2 = '#17c0fd',
-      color1 = '#fff',
-      moveBar = () => {
-        gsap.set('.bar', {
-          left: gsap.getProperty('.txt1', 'width') + 1
-        })
-      };
+    <div id="game-over"></div>
+    <div id="score">Điểm số: 0</div>
 
-    gsap.timeline({
-        delay: 0.2
-      })
-      .set('.txt1', {
-        color: color1,
-        fontWeight: 'regular'
-      })
-      .set('.txt2', {
-        color: color5,
-        fontWeight: 'bold',
-        opacity: 0,
-        x: gsap.getProperty('.txt1', 'width') - 2,
-        immediateRender: true
-      })
-      .set('.bar', {
-        left: 1,
-        backgroundColor: color1,
-        immediateRender: true
-      })
+    <script>
+        const boxSize = 20;
+        const boardSize = 400 / boxSize;
 
-      .to('.bar', {
-        duration: 0.1,
-        opacity: 0,
-        ease: Expo.easeIn,
-        yoyo: true,
-        repeat: 5,
-        repeatDelay: 0.3
-      }, 0)
-      .from('.txt1', {
-        duration: 1.1,
-        width: 0,
-        ease: SteppedEase.config(14),
-        onUpdate: moveBar
-      }, 2.5)
-      .to('.bar', {
-        duration: 0.05,
-        backgroundColor: color2
-      }, '+=0.15')
-      .to('.bar', {
-        duration: 1.0,
-        width: 290,
-        ease: Power4.easeInOut
-      }, '+=0.1')
-      .from('.container', {
-        duration: 1.0,
-        x: 135,
-        ease: Power4.easeInOut
-      }, '-=1.0')
-      .to('.txt2', {
-        duration: 0.01,
-        opacity: 1
-      }, '-=0.1')
-      .to('.bar', {
-        duration: 0.4,
-        x: 290,
-        width: 0,
-        ease: Power4.easeIn
-      })
-      .from(t2, {
-        duration: 0.6,
-        opacity: 0,
-        ease: Power3.easeInOut,
-        stagger: 0.02
-      }, '-=0.5')
-      .to('.txt1', {
-        duration: 1.5,
-        opacity: 0.25,
-        ease: Power3.easeInOut
-      }, '-=1.2')
-      .timeScale(1.45);
-  </script>
+        let snake = [{x: 5, y: 5}];
+        let food = {x: 10, y: 10};
+
+        let direction = 'right';
+        let nextDirection = 'right';
+        let gameStarted = false;
+        let gamePaused = false;
+
+        let score = 0;
+
+        const gameBoard = document.getElementById('game-board');
+        const wButton = document.getElementById('w-button');
+        const aButton = document.getElementById('a-button');
+        const sButton = document.getElementById('s-button');
+        const dButton = document.getElementById('d-button');
+        const gameOverElement = document.getElementById('game-over');
+        const scoreElement = document.getElementById('score');
+
+        let snakeSpeed = 200;
+        let snakeSpeedInterval = null;
+
+        function drawSnake() {
+            gameBoard.innerHTML = '';
+
+            snake.forEach(segment => {
+                const snakeElement = document.createElement('div');
+                snakeElement.style.left = segment.x * boxSize + 'px';
+                snakeElement.style.top = segment.y * boxSize + 'px';
+                snakeElement.classList.add('snake');
+                gameBoard.appendChild(snakeElement);
+            });
+        }
+
+        function drawFood() {
+            const foodElement = document.createElement('div');
+            foodElement.style.left = food.x * boxSize + 'px';
+            foodElement.style.top = food.y * boxSize + 'px';
+            foodElement.classList.add('food');
+            gameBoard.appendChild(foodElement);
+        }
+
+        function moveSnake() {
+            const head = {x: snake[0].x, y: snake[0].y};
+
+            direction = nextDirection;
+
+            switch (direction) {
+                case 'up':
+                    head.y -= 1;
+                    break;
+                case 'down':
+                    head.y += 1;
+                    break;
+                case 'left':
+                    head.x -= 1;
+                    break;
+                case 'right':
+                    head.x += 1;
+                    break;
+            }
+
+            if (head.x >= boardSize || head.x < 0 || head.y >= boardSize || head.y < 0 || isCollision(head, snake.slice(1))) {
+                endGame();
+                return;
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                food = generateFood();
+            } else {
+                snake.pop();
+            }
+
+            if (snakeSpeedInterval) {
+                clearInterval(snakeSpeedInterval);
+            }
+
+            const snakeSpeedDelay = Math.max(20, 200 - snake.length * 5);
+            snakeSpeedInterval = setInterval(moveSnake, snakeSpeedDelay);
+
+            gameOverElement.textContent = '';
+            scoreElement.textContent = 'Điểm số: ' + score;
+        }
+
+        function generateFood() {
+            const newFood = {
+                x: Math.floor(Math.random() * boardSize),
+                y: Math.floor(Math.random() * boardSize)
+            };
+
+            if (isCollision(newFood, snake)) {
+                return generateFood();
+            }
+
+            return newFood;
+        }
+
+        function isCollision(position, body) {
+            return body.some(segment => segment.x === position.x && segment.y === position.y);
+        }
+
+        function changeDirection(newDirection) {
+            if (!gameStarted) {
+                startGame();
+            }
+
+            if (gameStarted && !gamePaused) {
+                switch (newDirection) {
+                    case 'up':
+                        if (direction !== 'down') {
+                            nextDirection = newDirection;
+                        }
+                        break;
+                    case 'down':
+                        if (direction !== 'up') {
+                            nextDirection = newDirection;
+                        }
+                        break;
+                    case 'left':
+                        if (direction !== 'right') {
+                            nextDirection = newDirection;
+                        }
+                        break;
+                    case 'right':
+                        if (direction !== 'left') {
+                            nextDirection = newDirection;
+                        }
+                        break;
+                }
+            }
+        }
+
+        function startGame() {
+            if (gameStarted) {
+                return;
+            }
+
+            gameStarted = true;
+            gamePaused = false;
+            moveSnake();
+        }
+
+        function endGame() {
+            gameStarted = false;
+            clearInterval(snakeSpeedInterval);
+            gameOverElement.textContent = 'Bạn đã thua.';
+
+            const restartButton = document.createElement('button');
+            restartButton.textContent = 'Bắt đầu chơi lại';
+            restartButton.addEventListener('click', () => {
+                restartGame();
+            });
+
+            gameOverElement.appendChild(restartButton);
+        }
+
+        function restartGame() {
+            snake = [{x: 5, y: 5}];
+            food = {x: 10, y: 10};
+            direction = 'right';
+            nextDirection = 'right';
+            score = 0;
+            gameStarted = false;
+            gamePaused = false;
+            gameOverElement.textContent = '';
+            scoreElement.textContent = 'Điểm số: ' + score;
+
+            startGame();
+        }
+
+        function gameLoop() {
+            if (gameStarted && !gamePaused) {
+              drawSnake();
+              drawFood();
+        }        setTimeout(gameLoop, snakeSpeed);
+    }
+
+    document.addEventListener('keydown', event => {
+        switch (event.keyCode) {
+            case 65: // A
+                changeDirection('left');
+                break;
+            case 87: // W
+                changeDirection('up');
+                break;
+            case 68: // D
+                changeDirection('right');
+                break;
+            case 83: // S
+                changeDirection('down');
+                break;
+        }
+    });
+
+    wButton.addEventListener('click', () => changeDirection('up'));
+    aButton.addEventListener('click', () => changeDirection('left'));
+    sButton.addEventListener('click', () => changeDirection('down'));
+    dButton.addEventListener('click', () => changeDirection('right'));
+
+    gameLoop();
+</script>
 </body>
-
 </html>
+
+  
