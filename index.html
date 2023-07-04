@@ -1,288 +1,282 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Rắn</title>
+    <title>Trò chơi X/O phức tạp với Bot O thông minh</title>
     <style>
-        #game-board {
-            position: relative;
-            width: 370px;
-            height: 400px;
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-gap: 10px;
+            width: 600px;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
             border: 1px solid black;
-            overflow: hidden;
-        }
-
-        .snake {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: green;
-        }
-
-        .food {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: red;
-        }
-
-        #controls {
             display: flex;
+            align-items: center;
             justify-content: center;
-            margin-top: 20px;
-        }
-
-        .control-row {
-            display: flex;
-            justify-content: center;
-        }
-
-        .control-button {
-            margin: 0 10px;
-            padding: 10px 20px;
-            background-color: #e0e0e0;
-            border: none;
-            border-radius: 4px;
+            font-size: 20px;
             cursor: pointer;
         }
 
-        #game-over {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 20px;
+        .cell:hover {
+            background-color: lightgray;
         }
 
-        #score {
-            text-align: center;
+        .cell.x {
+            color: blue;
+        }
+
+        .cell.o {
+            color: red;
+        }
+
+        .message {
             margin-top: 10px;
-            font-size: 18px;
+        }
+
+        .button-container {
+            margin-top: 10px;
+        }
+
+        .button-container button {
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <div id="game-board"></div>
-
-    <div id="controls">
-        <div class="control-row">
-            <button class="control-button" id="w-button">W</button>
-        </div>
-        <div class="control-row">
-            <button class="control-button" id="a-button">A</button>
-            <button class="control-button" id="s-button">S</button>
-            <button class="control-button" id="d-button">D</button>
-        </div>
+    <div class="board"></div>
+    <div class="message"></div>
+    <div class="button-container">
+        <button class="reset-button">Chơi lại</button>
     </div>
 
-    <div id="game-over"></div>
-    <div id="score">Điểm số: 0</div>
-
     <script>
-        const boxSize = 20;
-        const boardSize = 400 / boxSize;
+        document.addEventListener('DOMContentLoaded', function () {
+            const board = document.querySelector('.board');
+            const message = document.querySelector('.message');
+            const cells = [];
 
-        let snake = [{x: 5, y: 5}];
-        let food = {x: 10, y: 10};
+            const boardSize = 10;
+            const winCondition = 5;
 
-        let direction = 'right';
-        let nextDirection = 'right';
-        let gameStarted = false;
-        let gamePaused = false;
+            let currentPlayer = 'X';
+            let moves = 0;
+            let gameOver = false;
 
-        let score = 0;
-
-        const gameBoard = document.getElementById('game-board');
-        const wButton = document.getElementById('w-button');
-        const aButton = document.getElementById('a-button');
-        const sButton = document.getElementById('s-button');
-        const dButton = document.getElementById('d-button');
-        const gameOverElement = document.getElementById('game-over');
-        const scoreElement = document.getElementById('score');
-
-        let snakeSpeed = 200;
-        let snakeSpeedInterval = null;
-
-        function drawSnake() {
-            gameBoard.innerHTML = '';
-
-            snake.forEach(segment => {
-                const snakeElement = document.createElement('div');
-                snakeElement.style.left = segment.x * boxSize + 'px';
-                snakeElement.style.top = segment.y * boxSize + 'px';
-                snakeElement.classList.add('snake');
-                gameBoard.appendChild(snakeElement);
-            });
-        }
-
-        function drawFood() {
-            const foodElement = document.createElement('div');
-            foodElement.style.left = food.x * boxSize + 'px';
-            foodElement.style.top = food.y * boxSize + 'px';
-            foodElement.classList.add('food');
-            gameBoard.appendChild(foodElement);
-        }
-
-        function moveSnake() {
-            const head = {x: snake[0].x, y: snake[0].y};
-
-            direction = nextDirection;
-
-            switch (direction) {
-                case 'up':
-                    head.y -= 1;
-                    break;
-                case 'down':
-                    head.y += 1;
-                    break;
-                case 'left':
-                    head.x -= 1;
-                    break;
-                case 'right':
-                    head.x += 1;
-                    break;
-            }
-
-            if (head.x >= boardSize || head.x < 0 || head.y >= boardSize || head.y < 0 || isCollision(head, snake.slice(1))) {
-                endGame();
-                return;
-            }
-
-            snake.unshift(head);
-
-            if (head.x === food.x && head.y === food.y) {
-                score++;
-                food = generateFood();
-            } else {
-                snake.pop();
-            }
-
-            if (snakeSpeedInterval) {
-                clearInterval(snakeSpeedInterval);
-            }
-
-            const snakeSpeedDelay = Math.max(20, 200 - snake.length * 5);
-            snakeSpeedInterval = setInterval(moveSnake, snakeSpeedDelay);
-
-            gameOverElement.textContent = '';
-            scoreElement.textContent = 'Điểm số: ' + score;
-        }
-
-        function generateFood() {
-            const newFood = {
-                x: Math.floor(Math.random() * boardSize),
-                y: Math.floor(Math.random() * boardSize)
-            };
-
-            if (isCollision(newFood, snake)) {
-                return generateFood();
-            }
-
-            return newFood;
-        }
-
-        function isCollision(position, body) {
-            return body.some(segment => segment.x === position.x && segment.y === position.y);
-        }
-
-        function changeDirection(newDirection) {
-            if (!gameStarted) {
-                startGame();
-            }
-
-            if (gameStarted && !gamePaused) {
-                switch (newDirection) {
-                    case 'up':
-                        if (direction !== 'down') {
-                            nextDirection = newDirection;
-                        }
-                        break;
-                    case 'down':
-                        if (direction !== 'up') {
-                            nextDirection = newDirection;
-                        }
-                        break;
-                    case 'left':
-                        if (direction !== 'right') {
-                            nextDirection = newDirection;
-                        }
-                        break;
-                    case 'right':
-                        if (direction !== 'left') {
-                            nextDirection = newDirection;
-                        }
-                        break;
+            function createBoard() {
+                for (let i = 0; i < boardSize * boardSize; i++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.index = i;
+                    cells.push(cell);
+                    board.appendChild(cell);
                 }
             }
-        }
 
-        function startGame() {
-            if (gameStarted) {
-                return;
+            function handleCellClick(e) {
+                if (gameOver) return;
+                const cell = e.target;
+                const index = cell.dataset.index;
+
+                if (cell.textContent !== '') return;
+
+                cell.textContent = currentPlayer;
+                cell.classList.add(currentPlayer.toLowerCase());
+                moves++;
+
+                if (checkWin(index)) {
+                    gameOver = true;
+                    message.textContent = `Người chơi ${currentPlayer} thắng!`;
+                    return;
+                }
+
+                if (moves === boardSize * boardSize) {
+                    gameOver = true;
+                    message.textContent = 'Trò chơi hòa!';
+                    return;
+                }
+
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+
+                if (currentPlayer === 'O' && !gameOver) {
+                    makeComputerMove();
+                }
             }
 
-            gameStarted = true;
-            gamePaused = false;
-            moveSnake();
-        }
+            function evaluateScore() {
+                if (checkWin()) {
+                    return currentPlayer === 'X' ? -10 : 10;
+                } else if (moves === boardSize * boardSize) {
+                    return 0;
+                }
+                return null;
+            }
 
-        function endGame() {
-            gameStarted = false;
-            clearInterval(snakeSpeedInterval);
-            gameOverElement.textContent = 'Bạn đã thua.';
+            function minimax(depth, isMaximizing) {
+                const score = evaluateScore();
 
-            const restartButton = document.createElement('button');
-            restartButton.textContent = 'Bắt đầu chơi lại';
-            restartButton.addEventListener('click', () => {
-                restartGame();
+                if (score !== null) {
+                    return score - depth;
+                }
+
+                if (isMaximizing) {
+                    let bestScore = -Infinity;
+                    for (let i = 0; i < boardSize * boardSize; i++) {
+                        if (cells[i].textContent === '') {
+                            cells[i].textContent = 'O';
+                            moves++;
+                            const score = minimax(depth + 1, false);
+                            cells[i].textContent = '';
+                            moves--;
+                            bestScore = Math.max(score, bestScore);
+                        }
+                    }
+                    return bestScore;
+                } else {
+                    let bestScore = Infinity;
+                    for (let i = 0; i < boardSize * boardSize; i++) {
+                        if (cells[i].textContent === '') {
+                            cells[i].textContent = 'X';
+                            moves++;
+                            const score = minimax(depth + 1, true);
+                            cells[i].textContent = '';
+                            moves--;
+                            bestScore = Math.min(score, bestScore);
+                        }
+                    }
+                    return bestScore;
+                }
+            }
+
+            function makeComputerMove() {
+                let bestScore = -Infinity;
+                let bestMove;
+                for (let i = 0; i < boardSize * boardSize; i++) {
+                    if (cells[i].textContent === '') {
+                        cells[i].textContent = 'O';
+                        moves++;
+                        const score = minimax(0, false);
+                        cells[i].textContent = '';
+                        moves--;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = i;
+                        }
+                    }
+                }
+
+                cells[bestMove].textContent = 'O';
+                cells[bestMove].classList.add('o');
+                moves++;
+
+                if (checkWin(bestMove)) {
+                    gameOver = true;
+                    message.textContent = 'Bot O thắng!';
+                    return;
+                }
+
+                if (moves === boardSize * boardSize) {
+                    gameOver = true;
+                    message.textContent = 'Trò chơi hòa!';
+                    return;
+                }
+
+                currentPlayer = 'X';
+            }
+
+            function checkWin(index) {
+                const row = Math.floor(index / boardSize);
+                const col = index % boardSize;
+                const symbol = currentPlayer;
+
+                let count = 1;
+                let i = 1;
+                while (col - i >= 0 && cells[row * boardSize + col - i].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                i = 1;
+                while (col + i < boardSize && cells[row * boardSize + col + i].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                if (count >= winCondition) {
+                    return true;
+                }
+
+                count = 1;
+                i = 1;
+                while (row - i >= 0 && cells[(row - i) * boardSize + col].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                i = 1;
+                while (row + i < boardSize && cells[(row + i) * boardSize + col].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                if (count >= winCondition) {
+                    return true;
+                }
+
+                count = 1;
+                i = 1;
+                while (row - i >= 0 && col - i >= 0 && cells[(row - i) * boardSize + col - i].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                i = 1;
+                while (row + i < boardSize && col + i < boardSize && cells[(row + i) * boardSize + col + i].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                if (count >= winCondition) {
+                    return true;
+                }
+
+                count = 1;
+                i = 1;
+                while (row - i >= 0 && col + i < boardSize && cells[(row - i) * boardSize + col + i].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                i = 1;
+                while (row + i < boardSize && col - i >= 0 && cells[(row + i) * boardSize + col - i].textContent === symbol) {
+                    count++;
+                    i++;
+                }
+                if (count >= winCondition) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            function resetGame() {
+                currentPlayer = 'X';
+                moves = 0;
+                gameOver = false;
+                message.textContent = '';
+                cells.forEach(cell => {
+                    cell.textContent = '';
+                    cell.classList.remove('x', 'o');
+                });
+            }
+
+            createBoard();
+
+            cells.forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
             });
 
-            gameOverElement.appendChild(restartButton);
-        }
-
-        function restartGame() {
-            snake = [{x: 5, y: 5}];
-            food = {x: 10, y: 10};
-            direction = 'right';
-            nextDirection = 'right';
-            score = 0;
-            gameStarted = false;
-            gamePaused = false;
-            gameOverElement.textContent = '';
-            scoreElement.textContent = 'Điểm số: ' + score;
-
-            startGame();
-        }
-
-        function gameLoop() {
-            if (gameStarted && !gamePaused) {
-              drawSnake();
-              drawFood();
-        }        setTimeout(gameLoop, snakeSpeed);
-    }
-
-    document.addEventListener('keydown', event => {
-        switch (event.keyCode) {
-            case 65: // A
-                changeDirection('left');
-                break;
-            case 87: // W
-                changeDirection('up');
-                break;
-            case 68: // D
-                changeDirection('right');
-                break;
-            case 83: // S
-                changeDirection('down');
-                break;
-        }
-    });
-
-    wButton.addEventListener('click', () => changeDirection('up'));
-    aButton.addEventListener('click', () => changeDirection('left'));
-    sButton.addEventListener('click', () => changeDirection('down'));
-    dButton.addEventListener('click', () => changeDirection('right'));
-
-    gameLoop();
-</script>
+            const resetButton = document.querySelector('.reset-button');
+            resetButton.addEventListener('click', resetGame);
+        });
+    </script>
 </body>
 </html>
-
-  
